@@ -6,9 +6,9 @@ import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.PIDSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.PIDSubsystem;
 import frc.robot.Constants;
 
 public class Elevator extends PIDSubsystem {
@@ -23,6 +23,8 @@ public class Elevator extends PIDSubsystem {
   public final Command down = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(-Constants.elevatorSetpointStep), this));
   public final Command bottom = Commands.runOnce(() -> setSetpoint(Constants.elevatorMinRot), this);
   public final Command top = Commands.runOnce(() -> setSetpoint(Constants.elevatorMaxRot), this);
+
+  public double height;
 
 
   public Elevator() {
@@ -43,11 +45,10 @@ public class Elevator extends PIDSubsystem {
   @Override
   public void useOutput(double output, double setpoint) {
     double speed = output*Constants.elevatorSpeedK;
+    height = (double)(-leftEncoder.getPosition() * (0.7)) + (double)Constants.elevatorInitHeight;
 
-    SmartDashboard.putNumber("elevSetpoint", setpoint);
-    SmartDashboard.putNumber("elevEncoder", (-leftEncoder.getPosition() + rightEncoder.getPosition()) / 2);
-    SmartDashboard.putNumber("elevSpeed", speed);
-    SmartDashboard.putNumber("elevOutput", output);
+    SmartDashboard.putNumber("elevator height", height);
+    SmartDashboard.putNumber("elevatorRot", -leftEncoder.getPosition());
 
     left.set(-speed);
     right.set(speed);
@@ -63,11 +64,6 @@ public class Elevator extends PIDSubsystem {
     if (newSetpoint < Constants.elevatorMaxRot && newSetpoint > Constants.elevatorMinRot) {
       setSetpoint(newSetpoint);
     }
-  }
-
-  public double getHeight() {
-    double height = (-leftEncoder.getPosition() * (2/3)) + Constants.elevatorInitHeight;
-    return height;
   }
   
   public void stop() {

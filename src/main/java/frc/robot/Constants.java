@@ -14,10 +14,9 @@ public final class Constants {
 
   // arm
   public static final float armMaxRot = 0;
-  public static final float armMinRot = (float)-6;
-  public static final double armSetpointStep = 0.05;
-  public static final double armRotToRadK = Math.PI/10;
-  public static final double armRotToRadA = Math.PI/2;
+  public static final double armSetpointStep = .2;
+  public static final double armRotToRadK = Math.PI/37.3;
+  public static final double armRadA = Math.PI/2;
 
   // CAN
   public static final int driveLeftMasterId = 1;
@@ -30,7 +29,8 @@ public final class Constants {
   public static final int armRightId = 8;
   
   // measurements
-  public static final double armLength = 3;
+  public static final double armLength = 41;
   public static final double baseWidth = 1.5;
-  public static final double elevatorInitHeight = 20;
+  public static final double elevatorInitHeight = 13;
+  public static final double elevatorSafetyA = -5;
 }

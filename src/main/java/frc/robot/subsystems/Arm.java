@@ -25,14 +25,12 @@ public class Arm extends PIDSubsystem {
   public final Command up = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(Constants.armSetpointStep), this));
   public final Command down = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(-Constants.armSetpointStep), this));
   public final Command top = Commands.runOnce(() -> setSetpoint(Constants.armMaxRot), this);
-  public final Command bottom = Commands.runOnce(() -> setSetpoint(Constants.armMinRot), this);
+  //public final Command bottom = Commands.runOnce(() -> setSetpoint(Constants.armMinRot), this);
 
   public final ArmFeedforward ff = new ArmFeedforward(0.1, 0.3, 0.2);
 
   public Arm() {
-    super(new PIDController(0.1, 0, 0));
-    leftEncoder.setPositionConversionFactor(-Math.PI/10);
-    rightEncoder.setPositionConversionFactor(-Math.PI/10);
+    super(new PIDController(0.1, 0, 0.0005));
     setSetpoint(0);
   }
 
@@ -47,6 +45,8 @@ public class Arm extends PIDSubsystem {
     SmartDashboard.putNumber("arm rad", getRad());
     SmartDashboard.putNumber("arm rot", leftEncoder.getPosition());
 
+    SmartDashboard.putNumber("armEncoder", (-leftEncoder.getPosition() + rightEncoder.getPosition()) / 2);
+    SmartDashboard.putNumber("armSpeed", speed);
 
     left.set(speed);
     right.set(-speed);
@@ -60,7 +60,6 @@ public class Arm extends PIDSubsystem {
     return leftEncoder.getPosition();
   }
 
-
   public void addToSetpoint(double addend) {
     double newSetpoint = getSetpoint() + addend;
     setSetpoint(newSetpoint);
@@ -72,7 +71,11 @@ public class Arm extends PIDSubsystem {
   }
 
   public double getRad() {
-    return (leftEncoder.getPosition() * Constants.armRotToRadK) + Constants.armRotToRadA;
+    return (leftEncoder.getPosition() * Constants.armRotToRadK) + Constants.armRadA;
+  }
+
+  public double angleToRot(double angle) {
+    return (angle - Constants.armRadA) * (1/Constants.armRotToRadK);
   }
 
   public void resetEncoders() {

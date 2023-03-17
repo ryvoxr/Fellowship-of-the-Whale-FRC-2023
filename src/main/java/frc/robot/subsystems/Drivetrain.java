@@ -4,12 +4,15 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 
-import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.RobotContainer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 
 public class Drivetrain extends SubsystemBase {
 
@@ -39,6 +42,8 @@ public class Drivetrain extends SubsystemBase {
     rightMotors.setInverted(true);
 
     drive = new DifferentialDrive(leftMotors, rightMotors);
+
+    double speedK = 0.4;
   }
 
   @Override
@@ -50,8 +55,8 @@ public class Drivetrain extends SubsystemBase {
   }
 
   public void driveWithJoystick() {
-    Joystick joystick = RobotContainer.joystick;
-    drive.arcadeDrive(-joystick.getY(), -joystick.getX());
+    XboxController joystick = RobotContainer.driveController;
+    drive.arcadeDrive((-joystick.getLeftY()/4), (-joystick.getLeftX()/4));
   }
 
   public void driveForward(int speed) {
