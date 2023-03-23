@@ -1,13 +1,14 @@
 package frc.robot.subsystems;
+import frc.robot.RobotContainer;
 
-import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
+import com.revrobotics.REVLibError;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.PIDSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -22,15 +23,17 @@ public class Arm extends PIDSubsystem {
   private RelativeEncoder leftEncoder = left.getEncoder();
   private RelativeEncoder rightEncoder = right.getEncoder();
 
-  public final Command up = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(Constants.armSetpointStep), this));
-  public final Command down = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(-Constants.armSetpointStep), this));
-  public final Command top = Commands.runOnce(() -> setSetpoint(Constants.armMaxRot), this);
-  //public final Command bottom = Commands.runOnce(() -> setSetpoint(Constants.armMinRot), this);
+  // public final Command up = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(Constants.armSetpointStep), this));
+  // public final Command down = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(-Constants.armSetpointStep), this));
 
-  public final ArmFeedforward ff = new ArmFeedforward(0.1, 0.3, 0.2);
+  public final Command up = Commands.run(() -> addToSetpoint(Constants.armSetpointStep));
+  public final Command down = Commands.run(() -> addToSetpoint(-Constants.armSetpointStep));
+  public final Command top = Commands.runOnce(() -> setSetpoint(Constants.armMaxRot), this);
+  
+  public final ArmFeedforward ff = new ArmFeedforward(0.1, 0.1, 0.2);
 
   public Arm() {
-    super(new PIDController(0.1, 0, 0.0005));
+    super(new PIDController(0.15, 0.1, 0));
     setSetpoint(0);
   }
 
@@ -38,21 +41,17 @@ public class Arm extends PIDSubsystem {
   public void useOutput(double output, double setpoint) {
     double speed = output;
 
-    if (output > 0) {
-      speed *= 2;
-    }
-
     SmartDashboard.putNumber("arm rad", getRad());
     SmartDashboard.putNumber("arm rot", leftEncoder.getPosition());
 
     SmartDashboard.putNumber("armEncoder", (-leftEncoder.getPosition() + rightEncoder.getPosition()) / 2);
     SmartDashboard.putNumber("armSpeed", speed);
 
+    double ffv = ff.calculate(rotToAngle(setpoint), 0.5);
+    SmartDashboard.putNumber("ff", ffv);
+
     left.set(speed);
     right.set(-speed);
-
-    double ffv = ff.calculate(0, 0);
-    SmartDashboard.putNumber("ff", ffv);
   }
 
   @Override
@@ -62,7 +61,9 @@ public class Arm extends PIDSubsystem {
 
   public void addToSetpoint(double addend) {
     double newSetpoint = getSetpoint() + addend;
-    setSetpoint(newSetpoint);
+    if (isSafe(addend > 0)) {
+      setSetpoint(newSetpoint);
+    }
   }
   
   public void stop() {
@@ -78,8 +79,45 @@ public class Arm extends PIDSubsystem {
     return (angle - Constants.armRadA) * (1/Constants.armRotToRadK);
   }
 
+  public double rotToAngle(double rot) {
+    return (rot * Constants.armRotToRadK) + Constants.armRadA;
+  }
+
   public void resetEncoders() {
     leftEncoder.setPosition(0);
     rightEncoder.setPosition(0);
+  }
+
+  private boolean isSafe(boolean goingUp) {
+    double angle = getRad();
+    double armHeight = Constants.armLength * Math.sin(angle);
+    double armWidth = Constants.armLength * Math.cos(angle);
+    boolean safe = true;
+
+    if ((angle > Math.PI/2) && goingUp) {
+      safe = false;
+    } else if (-armHeight > (RobotContainer.elevator.getHeight() + Constants.elevatorSafetyA) && !goingUp) {
+      safe = false;
+    }
+
+    SmartDashboard.putNumber("armWidth", armWidth);
+    SmartDashboard.putNumber("armHeight", armHeight);
+    if (safe) {
+      SmartDashboard.putString("arm safety", "yes");
+    } else {
+      SmartDashboard.putString("arm safety", "no");
+    }
+
+    return safe;
+
+  }
+
+  public void armWithController() {
+    XboxController controller = RobotContainer.systemController;
+    double pos = -controller.getLeftY()/5;
+    if (Math.abs(pos) < 0.02) {
+      pos = 0;
+    }
+    addToSetpoint(pos);
   }
 }

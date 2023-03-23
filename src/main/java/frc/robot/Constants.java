@@ -29,7 +29,7 @@ public final class Constants {
   public static final int armRightId = 8;
   
   // measurements
-  public static final double armLength = 41;
+  public static final double armLength = 28;
   public static final double baseWidth = 1.5;
   public static final double elevatorInitHeight = 13;
   public static final double elevatorSafetyA = -5;

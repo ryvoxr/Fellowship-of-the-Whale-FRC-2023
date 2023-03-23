@@ -1,4 +1,5 @@
 package frc.robot.subsystems;
+import frc.robot.RobotContainer;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -6,6 +7,7 @@ import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.PIDSubsystem;
@@ -23,9 +25,6 @@ public class Elevator extends PIDSubsystem {
   public final Command down = Commands.repeatingSequence(Commands.run(() -> addToSetpoint(-Constants.elevatorSetpointStep), this));
   public final Command bottom = Commands.runOnce(() -> setSetpoint(Constants.elevatorMinRot), this);
   public final Command top = Commands.runOnce(() -> setSetpoint(Constants.elevatorMaxRot), this);
-
-  public double height;
-
 
   public Elevator() {
     super(new PIDController(Constants.elevatorKp, Constants.elevatorKi, Constants.elevatorKd));
@@ -45,9 +44,8 @@ public class Elevator extends PIDSubsystem {
   @Override
   public void useOutput(double output, double setpoint) {
     double speed = output*Constants.elevatorSpeedK;
-    height = (double)(-leftEncoder.getPosition() * (0.7)) + (double)Constants.elevatorInitHeight;
 
-    SmartDashboard.putNumber("elevator height", height);
+    SmartDashboard.putNumber("elevator height", getHeight());
     SmartDashboard.putNumber("elevatorRot", -leftEncoder.getPosition());
 
     left.set(-speed);
@@ -61,7 +59,7 @@ public class Elevator extends PIDSubsystem {
 
   public void addToSetpoint(double addend) {
     double newSetpoint = getSetpoint() + addend;
-    if (newSetpoint < Constants.elevatorMaxRot && newSetpoint > Constants.elevatorMinRot) {
+    if (newSetpoint < Constants.elevatorMaxRot && newSetpoint > Constants.elevatorMinRot && isSafe(addend > 0)) {
       setSetpoint(newSetpoint);
     }
   }
@@ -74,5 +72,35 @@ public class Elevator extends PIDSubsystem {
   public void resetEncoders() {
     leftEncoder.setPosition(0);
     rightEncoder.setPosition(0);
+  }
+
+  public double getHeight() {
+    return (-leftEncoder.getPosition() * (0.7)) + Constants.elevatorInitHeight;
+  }
+
+  private boolean isSafe(boolean goingUp) {
+    double angle = RobotContainer.arm.getRad();
+    double armHeight = Constants.armLength * Math.sin(angle);
+    boolean safe = true;
+    if (((getHeight() + Constants.elevatorSafetyA) <= -armHeight) && angle < 0 && !goingUp) {
+      safe = false;
+    }
+    
+    if (safe) {
+      SmartDashboard.putString("elevator safety", "yes");
+    } else {
+      SmartDashboard.putString("elevator safety", "no");
+    }
+
+    return safe;
+  }
+
+  public void elevatorWithController() {
+    XboxController controller = RobotContainer.systemController;
+    double pos = -controller.getRightY();
+    if (Math.abs(pos) < 0.1) {
+      pos = 0;
+    }
+    addToSetpoint(pos);
   }
 }
