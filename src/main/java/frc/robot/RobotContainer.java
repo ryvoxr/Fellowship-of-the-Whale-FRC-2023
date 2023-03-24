@@ -12,7 +12,7 @@ public class RobotContainer {
   public static XboxController systemController = new XboxController(1);
 
   // subsystems
-  private final Drivetrain drive = new Drivetrain();
+  public static Drivetrain drive = new Drivetrain();
   public static Elevator elevator = new Elevator();
   public static Arm arm = new Arm();
   public static Claw claw = new Claw();

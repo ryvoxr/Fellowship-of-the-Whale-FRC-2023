@@ -5,7 +5,7 @@ import frc.robot.RobotContainer;
 import frc.robot.subsystems.Arm;
 
 public class ArmWithController extends CommandBase {
-private final Arm arm;
+  private final Arm arm;
 
   public ArmWithController(Arm a){
     arm = a;
